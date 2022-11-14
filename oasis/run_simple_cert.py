@@ -3,37 +3,33 @@
 
 import os,json,sys
 import logging
+format = '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s'
+logging.basicConfig(level=logging.ERROR,
+                    format=format,
+                    datefmt='%m-%d %H:%M',
+                    )
+
 import re
 from stixorm.module.typedb import TypeDBSink, TypeDBSource
 from config import connection,import_type
 from stix2 import (v21, parse)
 from pathlib import Path
 
-loggers = [logging.getLogger()]  # get the root logger
-loggers = loggers + [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+def change_stix_level():
+    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    for l in loggers:
+        if l.name.startswith('stix.module'):
+            l.setLevel(logging.DEBUG)
 
-for l in loggers:
-    if l.name.startswith('stix.module'):
-        # you can change verbosity here if needed
-        '''
-        l.setLevel(logging.DEBUG)
-        '''
-
-format = '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s'
 formatter = logging.Formatter(format )
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setLevel(logging.DEBUG)
-stdout_handler.setFormatter(formatter)
 
 file_handler = logging.FileHandler('oasis_cert.log',mode='w')
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
-logger.addHandler(stdout_handler)
 
 def load_personas(file_path='./data/stix_cert_data/stix_cert_persona_dict.json'):
     logger.info(f'Loading file {file_path}')
@@ -88,16 +84,8 @@ def verify_file(file_path,sink_db):
         if isinstance(json_blob, list):
             input_ids = set()
             for json_dict in json_blob:
-                #stix_obj = parse(item)
-                sink_db.add(json_dict)
                 input_ids.add(json_dict['id'])
-                '''
-                return_dict = source_db.get(stix_obj.id)
-                return_obj = parse(return_dict)
-                cmp = StixComparator()
-                check, p_ok, p_not = cmp.compare(stix_obj, return_obj)
-                return check
-                '''
+            sink_db.add(json_blob)
 
             output_ids = sink_db.get_stix_ids()
             tot_insert = len(output_ids)
@@ -117,18 +105,9 @@ def verify_file(file_path,sink_db):
             bundle = parse(json_blob)
             input_ids = set()
             for stix_obj in bundle.objects:
-                sink_db.add(stix_obj)
-                stix_obj.add(stix_obj ['id'])
-                '''
-                return_dict = self._typedbSource.get(stix_obj.id)
-                return_obj = parse(return_dict)
-                cmp = StixComparator()
-                check, p_ok, p_not = cmp.compare(stix_obj, return_obj)
-                logger.info(f'OK properties {p_ok}')
-                logger.info(f'KO properties {p_not}')
-                self.assertTrue(check)
-                '''
+                stix_obj.add(stix_obj['id'])
 
+            sink_db.add(bundle)
             output_ids = sink_db.get_stix_ids()
             tot_insert = len(output_ids)
             input_list = ','.join(list(input_ids))
