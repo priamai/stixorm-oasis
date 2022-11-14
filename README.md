@@ -15,6 +15,6 @@ For the latest main release:
 
 Or from the pip repository.... TBC
 
-Then run the simple certification test:
+Then make sure you are in the top folder (stixorm-oasis) and run the following:
 
 `python3 oasis/run_simple_cert.py`
