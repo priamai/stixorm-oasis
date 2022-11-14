@@ -227,6 +227,7 @@ def run_profile(short,profile):
 
             # let's reset the database for each level
             sink_db = TypeDBSink(connection=connection, clear=True, import_type=import_type)
+            source_db = TypeDBSource(connection=connection, import_type=import_type)
 
             sub_dir = Path.cwd()/'data'/'stix_cert_data'/level['dir']/level['sub_dir']
             logger.info(f"Test folder {sub_dir.parent.name}/{sub_dir.name}")
